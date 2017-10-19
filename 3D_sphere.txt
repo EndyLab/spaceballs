@@ -1,0 +1,72 @@
+read_file experiment
+
+dim 3
+boundaries 0 -_cellRAD_ _cellRAD_ r #r is for reflective
+boundaries 1 -_cellRAD_ _cellRAD_ r
+boundaries 2 -_cellRAD_ _cellRAD_ r
+
+time_start 0
+time_stop _simtime_
+time_step _ts_ #Want RMSD = sqrt(2tD) = sqrt(2)*10^-4µm to be ~10x? smaller than RAD (1.2nm here)
+random_seed 1337
+
+species _mol1_ _mol2_
+difc _mol1_(all) _Dc1_
+difc _mol2_(all) _Dc2_
+display_size _mol1_(all) _mol1RAD_
+color _mol1_(all) green
+display_size _mol2_(all) _mol2RAD_
+color _mol2_(all) red
+
+graphics opengl_good
+frame_thickness 0  #Makes the square disappear leaving only the compartment
+tiff_name data/image
+tiff_iter 5
+tiff_max 10
+
+max_surface 1
+start_surface membrane
+	action both all reflect
+	polygon both edge
+	color both 0 0 0
+	thickness 1
+	panel sphere 0 0 0 _cellRAD_ 50 50
+end_surface
+
+max_compartment 1
+start_compartment inside
+	surface membrane
+	point 0 0 0
+end_compartment
+
+reaction rxn1 _mol1_ + _mol1_ -> _mol1_ + _mol1_
+binding_radius rxn1 _mol1RAD_+_mol1RAD_
+product_placement rxn1 bounce
+
+reaction rxn2 _mol1_ + _mol2_ -> _mol1_ + _mol2_
+binding_radius rxn2 _mol2RAD_+_mol1RAD_
+product_placement rxn2 bounce
+
+reaction rxn3 _mol2_ + _mol2_ -> _mol2_ + _mol2_
+binding_radius rxn3 _mol2RAD_+_mol2RAD_
+product_placement rxn3 bounce
+
+compartment_mol _mol1Num_ _mol1_ inside
+mol _mol2Num_ _mol2_ _mol2Position_
+
+#output_file crowding_tot_output.csv stdout
+#output_format CSV
+#cmd i 0 10000 10 molcountspecieslist crowding_tot_output.csv 
+graphic_iter 1
+
+output_file stdout _outputSimtime_ _outputMolpos_
+output_format CSV
+#cmd i 0 1 1e-7 molcountspace _mol2 0 -0.05 0.05 _bins -0.05 0.05 1 data/2D_100nmCircle_molscrowding.csv
+#cmd i 0 1 1e-7 molcountspace _mol2 0 -0.05 0.05 50 -0.05 0.05 1 stdout
+#cmd i 0 1 1e-5 molcountspecieslist stdout
+cmd i 0 _simtime_ _molposTS_ molpos _mol2_ _outputMolpos_
+cmd i _simtime_ _simtime_ _simtime_ executiontime _outputSimtime_
+text_display time
+
+end_file
+
